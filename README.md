@@ -1,58 +1,148 @@
-# Real-time Black Hole Rendering in OpenGL
+# Interactive Schwarzschild Black Hole Simulation
 
-![Screenshot](docs/blackhole-screenrecord.gif)
+A real-time, interactive black hole simulation featuring advanced gravitational lensing effects, built with C++/OpenGL and compiled to WebAssembly for web deployment.
 
-## Prerequisite
+## Features
 
-- [cmake](https://cmake.org/)
-- [conan](https://conan.io/) package manager [^1][^2]
+- **Real-time gravitational lensing simulation** using ray-tracing techniques
+- **Interactive controls** for all simulation parameters
+- **High-quality post-processing pipeline** with bloom effects and tone mapping
+- **Sagittarius A* configuration** with Milky Way background
+- **WebGL2-based rendering** for cross-platform compatibility
+- **Responsive design** with draggable control panel
 
-[^1]: You might need to configure [$HOME/.conan/conan.conf](https://docs.conan.io/en/latest/reference/config_files/conan.conf.html) and Conan [profiles](https://docs.conan.io/en/latest/reference/profiles.html) if the `default profile` is not generated due to different build environments on your distribution.
-[^2]: Conan 1.xx instead of conan 2.xx or higher is suggested in order to avoid unnecessary problems.
+## Live Demo
 
-## Build the code
+Open `build_wasm/index.html` in a web browser to run the simulation. For best performance, use a modern browser with WebGL2 support.
 
-```bash
-# Configure the project and generate a native build system.
-cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+## Technical Implementation
 
-# Compile / build the project.
-cmake --build build
+### Core Technologies
+- **C++/OpenGL** - Native simulation engine
+- **Emscripten** - WebAssembly compilation toolchain
+- **WebGL2** - Web-based graphics rendering
+- **GLSL ES 3.0** - Shader programming
+- **JavaScript** - Web interface and fallback implementation
+
+### Rendering Pipeline
+1. **Main Render Pass** - Ray-traced gravitational lensing
+2. **Brightness Pass** - Extract bright regions for bloom
+3. **Bloom Composite** - Multi-pass bloom effect
+4. **Tone Mapping** - HDR to LDR conversion with gamma correction
+5. **Final Pass** - Composite to screen
+
+### Physics Model
+The simulation implements the Schwarzschild metric for black hole spacetime, calculating light ray trajectories through curved spacetime to produce accurate gravitational lensing effects.
+
+## Controls
+
+- **Mouse**: Rotate camera around black hole
+- **Mouse Wheel**: Zoom in/out
+- **H Key**: Toggle control panel
+- **F Key**: Toggle fullscreen mode
+
+### Adjustable Parameters
+- **Black Hole**: Gravitational lensing intensity
+- **Accretion Disk**: Enable/disable, height, inner/outer radius, rotation speed
+- **Post-Processing**: Bloom strength, gamma correction
+- **Camera**: Zoom level, pitch, yaw, roll
+
+## Project Structure
+
+```
+├── src/                    # C++ source code
+│   ├── main.cpp           # Native application entry point
+│   ├── main_wasm.cpp      # WebAssembly entry point
+│   ├── render.cpp         # Core rendering engine
+│   ├── shader.cpp         # Shader management
+│   └── texture.cpp        # Texture loading and management
+├── shader/                # GLSL shader files
+├── assets/                # Textures and skybox images
+├── build_wasm/            # WebAssembly build output
+│   ├── index.html         # Main web interface
+│   ├── blackhole_js.js    # JavaScript fallback implementation
+│   └── assets/            # Web-optimized assets
+└── libs/                  # Third-party libraries (GLM, ImGui, STB)
 ```
 
-## Acknowledgements
+## Building from Source
 
-**Papers**
+### Prerequisites
+- CMake 3.10+
+- Emscripten SDK
+- Modern C++ compiler (C++17 support)
 
-- Gravitational Lensing by Spinning Black Holes in Astrophysics, and in the Movie Interstellar
-- Trajectory Around A Spherically Symmetric Non-Rotating Black Hole - Sumanta
-- Approximating Light Rays In The Schwarzschild Field - O. Semerak
-- Implementing a Rasterization Framework for a Black Hole Spacetime - Yoshiyuki Yamashita
+### WebAssembly Build
+```bash
+# Install Emscripten SDK
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
+source ./emsdk_env.sh
 
-<!-- https://arxiv.org/pdf/1502.03808.pdf -->
-<!-- https://arxiv.org/pdf/1109.0676.pdf -->
-<!-- https://arxiv.org/pdf/1412.5650.pdf -->
-<!-- https://pdfs.semanticscholar.org/56ff/9c575c29ae8ed6042e23075ff0ca00031ccc.pdfhttps://pdfs.semanticscholar.org/56ff/9c575c29ae8ed6042e23075ff0ca00031ccc.pdf -->
+# Build WebAssembly version
+mkdir build_wasm && cd build_wasm
+emcmake cmake .. -DCMAKE_BUILD_TYPE=Release
+emmake make
+```
 
-**Articles**
+### Native Build
+```bash
+# Build native version
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make
+```
 
-- Physics of oseiskar.github.io/black-hole - https://oseiskar.github.io/black-hole/docs/physics.html
-- Schwarzschild geodesics - https://en.wikipedia.org/wiki/Schwarzschild_geodesics
-- Photons and black holes - https://flannelhead.github.io/posts/2016-03-06-photons-and-black-holes.html
-- A real-time simulation of the visual appearance of a Schwarzschild Black Hole - http://spiro.fisica.unipd.it/~antonell/schwarzschild/
-- Ray Tracing a Black Hole in C# by Mikolaj Barwicki - https://www.codeproject.com/Articles/994466/Ray-Tracing-a-Black-Hole-in-Csharp
-- Ray Marching and Signed Distance Functions - http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
-- Einstein's Rings and the Fabric of Space - https://www.youtube.com/watch?v=Rl8H4XEs0hw)
-- Opus 2, GLSL ray tracing tutorial - http://fhtr.blogspot.com/2013/12/opus-2-glsl-ray-tracing-tutorial.html
-- Ray Tracing in One Weekend - https://raytracing.github.io/
-- On ray casting, ray tracing, ray marching and the like - http://hugi.scene.org/online/hugi37/- hugi%2037%20-%20coding%20adok%20on%20ray%20casting,%20ray%20tracing,%20ray%20marching%20and%20the%20like.htm
+## Deployment
 
-**Other GitHub Projects**
+The WebAssembly version requires a web server due to CORS restrictions. Use the included Python server:
 
-- https://github.com/sirxemic/Interstellar
-- https://github.com/ssloy/tinyraytracer
-- https://github.com/RayTracing/raytracing.github.io
-- https://awesomeopensource.com/projects/raytracing
-- Ray-traced simulation of a black hole - https://github.com/oseiskar/black-hole
-- Raytracing a blackhole - https://rantonels.github.io/starless/
-- https://github.com/rantonels/schwarzschild
+```bash
+cd build_wasm
+python ../serve_wasm.py
+```
+
+Then open `http://localhost:8000` in your browser.
+
+## Performance Optimization
+
+- Uses WebGL2 for hardware-accelerated rendering
+- Implements efficient ray-tracing algorithms
+- Multi-pass rendering pipeline for visual quality
+- Optimized shader code for real-time performance
+- Asset preloading for smooth experience
+
+## Browser Compatibility
+
+- Chrome 56+
+- Firefox 51+
+- Safari 15+
+- Edge 79+
+
+Requires WebGL2 support for optimal performance.
+
+## License
+
+This project is based on the original black hole simulation. Please refer to the original repository for licensing information.
+
+## Acknowledgments
+
+This implementation builds upon existing black hole visualization techniques and incorporates modern web technologies for accessibility. Special thanks to the original developers and the computer graphics community for their contributions to real-time ray-tracing and gravitational lensing simulation.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues, feature requests, or pull requests to improve the simulation.
+
+## Technical Notes
+
+### WebGL2 Compatibility
+The simulation automatically handles differences between desktop OpenGL and WebGL2, including:
+- SRGB texture format conversion
+- GLSL version compatibility (OpenGL 3.3 Core to GLSL ES 3.0)
+- Precision qualifier requirements
+- Texture binding and uniform management
+
+### Fallback Implementation
+If WebAssembly fails to load, the simulation automatically falls back to a pure JavaScript/WebGL2 implementation that maintains visual fidelity and all interactive features.

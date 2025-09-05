@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Hole Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            color: white;
+        }
+
+        #canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            font-size: 15px;
+            width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+            cursor: move;
+            user-select: none;
+        }
+
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            color: #ff6b35;
+            margin-bottom: 12px;
+            font-size: 17px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 107, 53, 0.4);
+            padding-bottom: 6px;
+            cursor: default;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: default;
+        }
+
+        .control-item label {
+            color: #ddd;
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 180px;
+        }
+
+        .control-item input[type="range"] {
+            width: 160px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #ff6b35;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .control-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #ff6b35;
+            cursor: pointer;
+        }
+
+        .control-item .value {
+            color: #ff6b35;
+            font-size: 13px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .toggle-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #ccc;
+            z-index: 1001;
+        }
+
+        .toggle-controls:hover {
+            background: rgba(255, 107, 53, 0.2);
+        }
+
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #999;
+            z-index: 1000;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 107, 53, 0.3);
+            border-top: 3px solid #ff6b35;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Loading Schwarzschild Black Hole Model...</div>
+    </div>
+
+    <div class="toggle-controls" id="toggleControls" onclick="toggleControlPanel()">
+        Controls [H]
+    </div>
+
+    <div class="controls" id="controlPanel">
+        <div class="control-group">
+            <h3>Black Hole</h3>
+            <div class="control-item">
+                <label>Gravitational Lensing</label>
+                <input type="checkbox" id="gravatationalLensing" checked onchange="updateParam(this)">
+            </div>
+            <div class="control-item">
+                <label>Render Black Hole</label>
+                <input type="checkbox" id="renderBlackHole" checked onchange="updateParam(this)">
+            </div>
+            <div class="control-item">
+                <label>Mouse Control</label>
+                <input type="checkbox" id="mouseControl" checked onchange="updateParam(this)">
+            </div>
+            <div class="control-item">
+                <label>Camera Roll</label>
+                <input type="range" id="cameraRoll" min="-180" max="180" value="0" step="1" oninput="updateParam(this)">
+                <span class="value" id="cameraRoll_value">0°</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Accretion Disk</h3>
+            <div class="control-item">
+                <label>Enable Disk</label>
+                <input type="checkbox" id="adiskEnabled" checked onchange="updateParam(this)">
+            </div>
+            <div class="control-item">
+                <label>Particle Mode</label>
+                <input type="checkbox" id="adiskParticle" checked onchange="updateParam(this)">
+            </div>
+            <div class="control-item">
+                <label>Density Vertical</label>
+                <input type="range" id="adiskDensityV" min="0" max="10" value="3" step="0.1" oninput="updateParam(this)">
+                <span class="value" id="adiskDensityV_value">3.0</span>
+            </div>
+            <div class="control-item">
+                <label>Density Horizontal</label>
+                <input type="range" id="adiskDensityH" min="0" max="10" value="2.5" step="0.1" oninput="updateParam(this)">
+                <span class="value" id="adiskDensityH_value">2.5</span>
+            </div>
+            <div class="control-item">
+                <label>Disk Height</label>
+                <input type="range" id="adiskHeight" min="0" max="1" value="0.3" step="0.01" oninput="updateParam(this)">
+                <span class="value" id="adiskHeight_value">0.30</span>
+            </div>
+            <div class="control-item">
+                <label>Lighting</label>
+                <input type="range" id="adiskLit" min="0" max="4" value="0.4" step="0.01" oninput="updateParam(this)">
+                <span class="value" id="adiskLit_value">0.40</span>
+            </div>
+            <div class="control-item">
+                <label>Noise Scale</label>
+                <input type="range" id="adiskNoiseScale" min="0" max="10" value="1.2" step="0.1" oninput="updateParam(this)">
+                <span class="value" id="adiskNoiseScale_value">1.2</span>
+            </div>
+            <div class="control-item">
+                <label>Noise Detail</label>
+                <input type="range" id="adiskNoiseLOD" min="1" max="12" value="7" step="1" oninput="updateParam(this)">
+                <span class="value" id="adiskNoiseLOD_value">7</span>
+            </div>
+            <div class="control-item">
+                <label>Rotation Speed</label>
+                <input type="range" id="adiskSpeed" min="0" max="1" value="0.3" step="0.01" oninput="updateParam(this)">
+                <span class="value" id="adiskSpeed_value">0.30</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Post-Processing</h3>
+            <div class="control-item">
+                <label>Bloom Strength</label>
+                <input type="range" id="bloomStrength" min="0" max="1" value="0.15" step="0.01" oninput="updateParam(this)">
+                <span class="value" id="bloomStrength_value">0.15</span>
+            </div>
+            <div class="control-item">
+                <label>Tone Mapping</label>
+                <input type="checkbox" id="tonemappingEnabled" checked onchange="updateParam(this)">
+            </div>
+            <div class="control-item">
+                <label>Gamma</label>
+                <input type="range" id="gamma" min="1" max="4" value="1" step="0.1" oninput="updateParam(this)">
+                <span class="value" id="gamma_value">1.0</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Camera</h3>
+            <div class="control-item">
+                <label>Zoom Level</label>
+                <input type="range" id="zoomLevel" min="0.1" max="5" value="1" step="0.1" oninput="updateParam(this)">
+                <span class="value" id="zoomLevel_value">1.0</span>
+            </div>
+            <div class="control-item">
+                <label>Front View</label>
+                <input type="checkbox" id="frontView" onchange="updateParam(this)">
+            </div>
+            <div class="control-item">
+                <label>Top View</label>
+                <input type="checkbox" id="topView" onchange="updateParam(this)">
+            </div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <strong>Controls:</strong> Mouse: Rotate camera | Wheel: Zoom | H: Toggle controls | F: Fullscreen
+    </div>
+
+    <!-- Load all the JavaScript modules -->
+    <script src="webgl_fix.js"></script>
+    <script src="main_loop_fix.js"></script>
+    <script src="blackhole_js.js"></script>
+
+    <script>
+        let simulation = null;
+        let controlsVisible = true;
+
+        // Initialize the simulation
+        async function init() {
+            const canvas = document.getElementById('canvas');
+            
+            // Set canvas size to full window
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                if (simulation && simulation.initialized) {
+                    simulation.canvas.width = canvas.width;
+                    simulation.canvas.height = canvas.height;
+                }
+            }
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Create and initialize simulation
+            simulation = new BlackHoleSimulation(canvas);
+            
+            try {
+                const success = await simulation.init();
+                if (success) {
+                    simulation.start();
+                    document.getElementById('loading').style.display = 'none';
+                    console.log('🌟 Black hole simulation ready!');
+                    
+                    // Add mouse wheel zoom
+                    setupZoomControl();
+                } else {
+                    console.error('❌ Failed to initialize simulation');
+                }
+            } catch (error) {
+                console.error('❌ Simulation error:', error);
+            }
+        }
+
+        // Setup mouse wheel zoom control
+        function setupZoomControl() {
+            let zoomLevel = 1.0;
+            
+            simulation.canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                
+                const zoomSpeed = 0.1;
+                const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
+                zoomLevel = Math.max(0.1, Math.min(5.0, zoomLevel + delta));
+                
+                // Update the slider
+                document.getElementById('zoomLevel').value = zoomLevel;
+                document.getElementById('zoomLevel_value').textContent = zoomLevel.toFixed(1);
+                
+                // Update simulation parameter
+                if (simulation && simulation.params) {
+                    simulation.params.fovScale = 1.0 / zoomLevel;
+                }
+            });
+        }
+
+        // Update simulation parameters from controls
+        function updateParam(element) {
+            if (!simulation || !simulation.params) return;
+            
+            const id = element.id;
+            let value;
+            
+            if (element.type === 'checkbox') {
+                value = element.checked ? 1.0 : 0.0;
+            } else if (element.type === 'range') {
+                value = parseFloat(element.value);
+                // Update value display
+                const valueSpan = document.getElementById(id + '_value');
+                if (valueSpan) {
+                    if (id === 'cameraRoll') {
+                        valueSpan.textContent = value + '°';
+                    } else {
+                        valueSpan.textContent = value.toFixed(2);
+                    }
+                }
+            }
+            
+            // Special handling for zoom
+            if (id === 'zoomLevel') {
+                simulation.params.fovScale = 1.0 / value;
+            } else {
+                simulation.params[id] = value;
+            }
+        }
+
+        // Toggle control panel
+        function toggleControlPanel() {
+            const panel = document.getElementById('controlPanel');
+            controlsVisible = !controlsVisible;
+            
+            if (controlsVisible) {
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        // Make control panel draggable
+        function makeDraggable() {
+            const controlPanel = document.getElementById('controlPanel');
+            let isDragging = false;
+            let dragOffset = { x: 0, y: 0 };
+
+            controlPanel.addEventListener('mousedown', (e) => {
+                // Only start drag if clicking on the panel background or headers, not controls
+                if (e.target === controlPanel || e.target.tagName === 'H3') {
+                    isDragging = true;
+                    const rect = controlPanel.getBoundingClientRect();
+                    dragOffset.x = e.clientX - rect.left;
+                    dragOffset.y = e.clientY - rect.top;
+                    controlPanel.style.cursor = 'grabbing';
+                    e.preventDefault();
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const x = Math.max(0, Math.min(window.innerWidth - controlPanel.offsetWidth, e.clientX - dragOffset.x));
+                    const y = Math.max(0, Math.min(window.innerHeight - controlPanel.offsetHeight, e.clientY - dragOffset.y));
+                    
+                    controlPanel.style.left = x + 'px';
+                    controlPanel.style.top = y + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    controlPanel.style.cursor = 'move';
+                }
+            });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'h':
+                    toggleControlPanel();
+                    break;
+                case 'f':
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    } else {
+                        document.documentElement.requestFullscreen();
+                    }
+                    break;
+            }
+        });
+
+        // Initialize draggable functionality
+        makeDraggable();
+
+        // Start the simulation
+        init();
+    </script>
+</body>
+</html>

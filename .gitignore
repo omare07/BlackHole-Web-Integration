@@ -1,2 +1,58 @@
-/build
-.vscode
+# Build directories
+build/
+build_wasm/CMakeFiles/
+build_wasm/CMakeCache.txt
+build_wasm/cmake_install.cmake
+build_wasm/Makefile
+build_wasm/*.wasm
+build_wasm/*.js
+build_wasm/*.data
+
+# Emscripten SDK (too large for repo)
+emsdk/
+
+# IDE files
+.vscode/
+.vs/
+*.vcxproj*
+*.sln
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# Object files
+*.o
+*.obj
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# ImGui config
+imgui.ini

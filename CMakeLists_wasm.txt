@@ -25,7 +25,6 @@ set(IMGUI_SOURCES
 include_directories(${IMGUI_DIR})
 include_directories(${IMGUI_DIR}/backends)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/stb)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/glm)
 
 # Add source files - using WebAssembly main
 file(GLOB SRC_FILES

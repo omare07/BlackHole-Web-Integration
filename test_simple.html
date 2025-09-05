@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Black Hole WebGL Test</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #111; color: white; font-family: monospace; }
+        canvas { border: 1px solid #444; display: block; margin: 20px 0; }
+        #log { background: #000; padding: 10px; height: 200px; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Black Hole WebGL Debug Test</h1>
+    <div id="status">Testing WebGL2 compatibility...</div>
+    <canvas id="testCanvas" width="512" height="512"></canvas>
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function logMessage(msg) {
+            console.log(msg);
+            log.innerHTML += msg + '\n';
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(msg) {
+            status.textContent = msg;
+            logMessage('STATUS: ' + msg);
+        }
+
+        // Test WebGL2 support
+        const canvas = document.getElementById('testCanvas');
+        const gl = canvas.getContext('webgl2');
+        
+        if (!gl) {
+            updateStatus('❌ WebGL2 not supported');
+            logMessage('❌ WebGL2 context creation failed');
+            logMessage('Browser: ' + navigator.userAgent);
+        } else {
+            updateStatus('✅ WebGL2 supported');
+            logMessage('✅ WebGL2 context created successfully');
+            logMessage('Version: ' + gl.getParameter(gl.VERSION));
+            logMessage('Vendor: ' + gl.getParameter(gl.VENDOR));
+            logMessage('Renderer: ' + gl.getParameter(gl.RENDERER));
+            
+            // Test basic rendering
+            gl.clearColor(0.2, 0.0, 0.5, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            logMessage('✅ Basic clear test successful');
+            
+            // Test texture formats
+            testTextureFormats(gl);
+            
+            // Test shader compilation
+            testShaderCompilation(gl);
+        }
+
+        function testTextureFormats(gl) {
+            logMessage('\n🧪 Testing texture formats...');
+            
+            const formats = [
+                { internal: gl.RGBA8, format: gl.RGBA, name: 'RGBA8' },
+                { internal: gl.RGB8, format: gl.RGB, name: 'RGB8' },
+                { internal: gl.R8, format: gl.RED, name: 'R8' },
+            ];
+            
+            formats.forEach(fmt => {
+                try {
+                    const tex = gl.createTexture();
+                    gl.bindTexture(gl.TEXTURE_2D, tex);
+                    
+                    const data = new Uint8Array(4);
+                    data.fill(255);
+                    
+                    gl.texImage2D(gl.TEXTURE_2D, 0, fmt.internal, 1, 1, 0, fmt.format, gl.UNSIGNED_BYTE, data);
+                    
+                    const error = gl.getError();
+                    if (error === gl.NO_ERROR) {
+                        logMessage(`✅ ${fmt.name} format supported`);
+                    } else {
+                        logMessage(`❌ ${fmt.name} format failed with error: ${error}`);
+                    }
+                    
+                    gl.deleteTexture(tex);
+                } catch (e) {
+                    logMessage(`❌ ${fmt.name} format exception: ${e.message}`);
+                }
+            });
+        }
+
+        function testShaderCompilation(gl) {
+            logMessage('\n🧪 Testing shader compilation...');
+            
+            const vertexShaderSource = `#version 300 es
+precision highp float;
+precision highp int;
+
+in vec3 position;
+out vec2 uv;
+
+void main() {
+    uv = (position.xy + 1.0) * 0.5;
+    gl_Position = vec4(position, 1.0);
+}`;
+
+            const fragmentShaderSource = `#version 300 es
+precision highp float;
+
+in vec2 uv;
+out vec4 fragColor;
+
+void main() {
+    fragColor = vec4(uv, 0.5, 1.0);
+}`;
+
+            try {
+                const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vertexShaderSource, 'vertex');
+                const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource, 'fragment');
+                
+                if (vertexShader && fragmentShader) {
+                    const program = gl.createProgram();
+                    gl.attachShader(program, vertexShader);
+                    gl.attachShader(program, fragmentShader);
+                    gl.linkProgram(program);
+                    
+                    if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                        logMessage('✅ Shader program linked successfully');
+                        updateStatus('✅ All WebGL2 tests passed! The issue is elsewhere.');
+                    } else {
+                        const error = gl.getProgramInfoLog(program);
+                        logMessage('❌ Program linking failed: ' + error);
+                    }
+                    
+                    gl.deleteProgram(program);
+                }
+                
+                if (vertexShader) gl.deleteShader(vertexShader);
+                if (fragmentShader) gl.deleteShader(fragmentShader);
+                
+            } catch (e) {
+                logMessage('❌ Shader test exception: ' + e.message);
+            }
+        }
+
+        function compileShader(gl, type, source, name) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            
+            if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                logMessage(`✅ ${name} shader compiled successfully`);
+                return shader;
+            } else {
+                const error = gl.getShaderInfoLog(shader);
+                logMessage(`❌ ${name} shader compilation failed: ${error}`);
+                gl.deleteShader(shader);
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>

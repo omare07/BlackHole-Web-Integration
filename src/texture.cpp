@@ -16,13 +16,21 @@ GLuint loadTexture2D(const std::string &file, bool repeat) {
     GLenum internalFormat;
     if (comp == 1) {
       format = GL_RED;
-      internalFormat = GL_RED;
+      internalFormat = GL_R8;
     } else if (comp == 3) {
       format = GL_RGB;
+#ifdef __EMSCRIPTEN__
+      internalFormat = GL_RGB8;  // WebGL2 compatible
+#else
       internalFormat = GL_SRGB;
+#endif
     } else if (comp == 4) {
       format = GL_RGBA;
+#ifdef __EMSCRIPTEN__
+      internalFormat = GL_RGBA8;  // WebGL2 compatible
+#else
       internalFormat = GL_SRGB_ALPHA;
+#endif
     }
 
     glBindTexture(GL_TEXTURE_2D, textureID);
@@ -61,7 +69,13 @@ GLuint loadCubemap(const std::string &cubemapDir) {
         stbi_load((cubemapDir + "/" + faces[i] + ".png").c_str(), &width,
                   &height, &comp, 0);
     if (data) {
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_SRGB, width,
+      GLenum internalFormat;
+#ifdef __EMSCRIPTEN__
+      internalFormat = GL_RGB8;  // WebGL2 compatible
+#else
+      internalFormat = GL_SRGB;
+#endif
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width,
                    height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
       stbi_image_free(data);
     } else {
