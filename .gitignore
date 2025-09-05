@@ -5,13 +5,21 @@ build_wasm/CMakeCache.txt
 build_wasm/cmake_install.cmake
 build_wasm/Makefile
 
-# Allow essential WebAssembly files for deployment
-!build_wasm/BlackholeWASM.wasm
-!build_wasm/BlackholeWASM.js
-!build_wasm/BlackholeWASM.data
-!build_wasm/blackhole_js.js
-!build_wasm/webgl_fix.js
-!build_wasm/main_loop_fix.js
+# Exclude build artifacts but allow all deployment files
+build_wasm/*.o
+build_wasm/*.d
+build_wasm/*.make
+build_wasm/*.rsp
+build_wasm/*.ts
+
+# Allow ALL essential files for deployment
+!build_wasm/*.html
+!build_wasm/*.js
+!build_wasm/*.wasm
+!build_wasm/*.data
+!build_wasm/*.frag
+!build_wasm/*.vert
+!build_wasm/*.png
 
 # Emscripten SDK (too large for repo)
 emsdk/
