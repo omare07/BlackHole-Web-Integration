@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .check-item {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Black Hole Simulation - Deployment Verification</h1>
+    <p>This page verifies that all files are present and the simulation is ready to deploy.</p>
+    
+    <button onclick="runVerification()">Run Verification</button>
+    <button onclick="window.open('index.html', '_blank')">Test Simulation</button>
+    
+    <div id="results">
+        <div class="check-item">
+            <strong>File Structure Check</strong>
+            <span id="files-status" class="status pending">PENDING</span>
+            <div id="files-details"></div>
+        </div>
+        
+        <div class="check-item">
+            <strong>WebGL2 Support</strong>
+            <span id="webgl-status" class="status pending">PENDING</span>
+            <div id="webgl-details"></div>
+        </div>
+        
+        <div class="check-item">
+            <strong>JavaScript Files</strong>
+            <span id="js-status" class="status pending">PENDING</span>
+            <div id="js-details"></div>
+        </div>
+        
+        <div class="check-item">
+            <strong>WebAssembly Support</strong>
+            <span id="wasm-status" class="status pending">PENDING</span>
+            <div id="wasm-details"></div>
+        </div>
+        
+        <div class="check-item">
+            <strong>Asset Loading</strong>
+            <span id="assets-status" class="status pending">PENDING</span>
+            <div id="assets-details"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runVerification() {
+            console.log('🔍 Running deployment verification...');
+            
+            // Check file structure
+            await checkFiles();
+            
+            // Check WebGL2 support
+            checkWebGL();
+            
+            // Check JavaScript files
+            await checkJavaScript();
+            
+            // Check WebAssembly support
+            checkWebAssembly();
+            
+            // Check asset loading
+            await checkAssets();
+            
+            console.log('✅ Verification complete!');
+        }
+        
+        async function checkFiles() {
+            const requiredFiles = [
+                'index.html',
+                'BlackholeWASM.js',
+                'BlackholeWASM.wasm', 
+                'BlackholeWASM.data',
+                'blackhole_js.js',
+                'webgl_fix.js',
+                'main_loop_fix.js',
+                'assets/color_map.png',
+                'assets/skybox_nebula_dark/front.png',
+                'shader/blackhole_main.frag'
+            ];
+            
+            let passCount = 0;
+            let details = '<ul>';
+            
+            for (const file of requiredFiles) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        details += `<li>✅ ${file}</li>`;
+                        passCount++;
+                    } else {
+                        details += `<li>❌ ${file} (${response.status})</li>`;
+                    }
+                } catch (error) {
+                    details += `<li>❌ ${file} (Error: ${error.message})</li>`;
+                }
+            }
+            
+            details += '</ul>';
+            document.getElementById('files-details').innerHTML = details;
+            
+            const status = passCount === requiredFiles.length ? 'pass' : 'fail';
+            const statusText = `${passCount}/${requiredFiles.length} files found`;
+            updateStatus('files-status', status, statusText);
+        }
+        
+        function checkWebGL() {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl2');
+            
+            if (gl) {
+                const info = {
+                    vendor: gl.getParameter(gl.VENDOR),
+                    renderer: gl.getParameter(gl.RENDERER),
+                    version: gl.getParameter(gl.VERSION)
+                };
+                
+                document.getElementById('webgl-details').innerHTML = 
+                    `<p>Vendor: ${info.vendor}<br>Renderer: ${info.renderer}<br>Version: ${info.version}</p>`;
+                updateStatus('webgl-status', 'pass', 'WebGL2 Supported');
+            } else {
+                document.getElementById('webgl-details').innerHTML = 
+                    '<p>WebGL2 not supported. Simulation will use fallback.</p>';
+                updateStatus('webgl-status', 'fail', 'WebGL2 Not Supported');
+            }
+        }
+        
+        async function checkJavaScript() {
+            const jsFiles = ['webgl_fix.js', 'main_loop_fix.js', 'blackhole_js.js'];
+            let loadedCount = 0;
+            let details = '<ul>';
+            
+            for (const file of jsFiles) {
+                try {
+                    const response = await fetch(file);
+                    const content = await response.text();
+                    
+                    if (content.length > 100) { // Basic content check
+                        details += `<li>✅ ${file} (${(content.length/1024).toFixed(1)}KB)</li>`;
+                        loadedCount++;
+                    } else {
+                        details += `<li>❌ ${file} (Too small: ${content.length} bytes)</li>`;
+                    }
+                } catch (error) {
+                    details += `<li>❌ ${file} (${error.message})</li>`;
+                }
+            }
+            
+            details += '</ul>';
+            document.getElementById('js-details').innerHTML = details;
+            
+            const status = loadedCount === jsFiles.length ? 'pass' : 'fail';
+            updateStatus('js-status', status, `${loadedCount}/${jsFiles.length} JS files loaded`);
+        }
+        
+        function checkWebAssembly() {
+            if (typeof WebAssembly === 'object') {
+                document.getElementById('wasm-details').innerHTML = 
+                    '<p>WebAssembly is supported. Binary files can be loaded.</p>';
+                updateStatus('wasm-status', 'pass', 'WebAssembly Supported');
+            } else {
+                document.getElementById('wasm-details').innerHTML = 
+                    '<p>WebAssembly not supported. Will use JavaScript fallback.</p>';
+                updateStatus('wasm-status', 'fail', 'WebAssembly Not Supported');
+            }
+        }
+        
+        async function checkAssets() {
+            const assetFiles = [
+                'assets/color_map.png',
+                'assets/skybox_nebula_dark/front.png',
+                'assets/skybox_nebula_dark/back.png'
+            ];
+            
+            let loadedCount = 0;
+            let totalSize = 0;
+            let details = '<ul>';
+            
+            for (const file of assetFiles) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        const size = response.headers.get('content-length');
+                        const sizeKB = size ? (parseInt(size) / 1024).toFixed(1) : 'Unknown';
+                        details += `<li>✅ ${file} (${sizeKB}KB)</li>`;
+                        loadedCount++;
+                        if (size) totalSize += parseInt(size);
+                    } else {
+                        details += `<li>❌ ${file} (${response.status})</li>`;
+                    }
+                } catch (error) {
+                    details += `<li>❌ ${file} (${error.message})</li>`;
+                }
+            }
+            
+            details += `</ul><p>Total asset size: ${(totalSize/1024/1024).toFixed(1)}MB</p>`;
+            document.getElementById('assets-details').innerHTML = details;
+            
+            const status = loadedCount === assetFiles.length ? 'pass' : 'fail';
+            updateStatus('assets-status', status, `${loadedCount}/${assetFiles.length} assets loaded`);
+        }
+        
+        function updateStatus(elementId, status, text) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = text;
+        }
+        
+        // Auto-run verification when page loads
+        window.addEventListener('load', () => {
+            setTimeout(runVerification, 1000);
+        });
+    </script>
+</body>
+</html>

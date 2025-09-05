@@ -44,39 +44,41 @@ def main():
     
     os.chdir(build_dir)
     
-    # Check if WASM files exist
-    wasm_files = ['BlackholeWASM.html', 'BlackholeWASM.js', 'BlackholeWASM.wasm', 'BlackholeWASM.data']
-    missing_files = [f for f in wasm_files if not os.path.exists(f)]
+    # Check if deployment files exist
+    deployment_files = ['index.html', 'BlackholeWASM.js', 'BlackholeWASM.wasm', 'BlackholeWASM.data', 'blackhole_js.js']
+    missing_files = [f for f in deployment_files if not os.path.exists(f)]
     
     if missing_files:
-        print(f"❌ Missing WebAssembly files: {missing_files}")
-        print(f"🔨 Build the WebAssembly version first")
+        print(f"❌ Missing deployment files: {missing_files}")
+        print(f"🔨 Make sure all deployment files are present")
         return 1
     
-    print(f"🕳️  REAL BLACK HOLE SIMULATION - WEBASSEMBLY")
+    print(f"🕳️  SCHWARZSCHILD BLACK HOLE SIMULATION")
     print(f"=" * 60)
-    print(f"✅ WebAssembly files found:")
-    for file in wasm_files:
-        size = os.path.getsize(file) / (1024 * 1024)  # MB
-        print(f"   📁 {file} ({size:.1f} MB)")
+    print(f"✅ Deployment files found:")
+    for file in deployment_files:
+        if os.path.exists(file):
+            size = os.path.getsize(file) / (1024 * 1024)  # MB
+            print(f"   📁 {file} ({size:.1f} MB)")
     
     with socketserver.TCPServer(("", PORT), WASMHandler) as httpd:
         print(f"🌐 Server running at: http://localhost:{PORT}")
-        print(f"🚀 Real C++ simulation: http://localhost:{PORT}/BlackholeWASM.html")
-        print(f"⭐ This is the ACTUAL C++ code running in WebAssembly!")
-        print(f"✨ Full physics simulation with all advanced effects")
-        print(f"🎮 ImGui controls, bloom effects, gravitational lensing")
+        print(f"🚀 Interactive simulation: http://localhost:{PORT}/")
+        print(f"🔧 Deployment test: http://localhost:{PORT}/VERIFY_DEPLOYMENT.html")
+        print(f"⭐ WebAssembly + JavaScript fallback for maximum compatibility")
+        print(f"✨ Sagittarius A* with full post-processing pipeline")
+        print(f"🎮 Draggable controls, mouse zoom, keyboard shortcuts")
         print(f"⭐ Press Ctrl+C to stop the server")
         print(f"=" * 60)
         
         # Try to open browser automatically
         try:
-            webbrowser.open(f'http://localhost:{PORT}/BlackholeWASM.html')
+            webbrowser.open(f'http://localhost:{PORT}/')
             print(f"🌐 Browser opening automatically...")
-            print(f"🚀 Loading real C++ black hole simulation...")
+            print(f"🚀 Loading Schwarzschild black hole simulation...")
         except:
             print(f"🌐 Please open your browser manually to:")
-            print(f"   http://localhost:{PORT}/BlackholeWASM.html")
+            print(f"   http://localhost:{PORT}/")
         
         try:
             httpd.serve_forever()
